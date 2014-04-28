@@ -1,0 +1,6 @@
+{
+  "api_key": "<discourse_key>",
+  "api_user": "system",
+  "api_url": "http://try.discourse.org",
+  "category": "missioncategory"
+}
