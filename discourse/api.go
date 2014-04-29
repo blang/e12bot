@@ -31,7 +31,6 @@ func APIFromConfig(c *config.Config) *API {
 
 func (api *API) Get(path string) ([]byte, error) {
 	url := api.BaseURL + path + "?api_key=" + api.Key + "&api_username=" + api.User
-	log.Printf("Get: %s", url)
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -73,12 +72,11 @@ type DiscoursePostStream struct {
 }
 
 type DiscoursePost struct {
-	Id         int    `json:"id"`
-	PostNumber int    `json:"post_number"`
-	Username   string `json:"username"`
-	UserID     int    `json:"user_id"`
-	// Cooked     string               `json:"cooked"`
-	Links []*DiscoursePostLink `json:"link_counts"`
+	Id         int                  `json:"id"`
+	PostNumber int                  `json:"post_number"`
+	Username   string               `json:"username"`
+	UserID     int                  `json:"user_id"`
+	Links      []*DiscoursePostLink `json:"link_counts"`
 }
 
 type DiscourseCreatePost struct {
@@ -111,7 +109,6 @@ func (api *API) CategoryFeed(categoryName string) (*DiscourseCategoryFeed, error
 
 func (api *API) PostFeed(topicId int) (*DiscoursePostFeed, error) {
 	b, err := api.Get("/t/" + strconv.Itoa(topicId) + ".json")
-	fmt.Printf("Output:%s", string(b[:]))
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +141,13 @@ func (api *API) CreatePost(createPost *DiscourseCreatePost) {
 		return
 	}
 	defer resp.Body.Close()
-	log.Printf("Post Response: %s", resp)
+	if resp.StatusCode != 200 {
+		log.Printf("Status code while creating post was %d", resp.StatusCode)
+		log.Printf("Response: %s", resp)
+		contents, _ := ioutil.ReadAll(resp.Body)
+		log.Printf("Response Body: %s", contents)
+	}
+	log.Printf("Successfully created post for topic: %d", createPost.TopicID)
 }
 
 func (api *API) UpdatePost(postID int, editReason string, content string) {
@@ -152,16 +155,9 @@ func (api *API) UpdatePost(postID int, editReason string, content string) {
 		"post[raw]":         {content},
 		"post[edit_reason]": {editReason},
 	}
-	// values := url.Values{
-	// 	"post[raw]":         {"Test"},
-	// 	"post[edit_reason]": {""},
-	// }
 
 	url := api.BaseURL + "/posts/" + strconv.Itoa(postID) + ".json?api_key=" + api.Key + "&api_username=" + api.User
-	log.Printf("Url to post: %s", url)
-	//httpClient := &http.Client{}
 	data := values.Encode()
-	log.Printf("Values to post: %s", data)
 	req, err := http.NewRequest("PUT", url, strings.NewReader(data))
 	if err != nil {
 		log.Printf("Error while encoding request: %s", err)
@@ -177,19 +173,12 @@ func (api *API) UpdatePost(postID int, editReason string, content string) {
 		return
 	}
 	defer resp.Body.Close()
-	log.Printf("Post Response: %s", resp)
-	contents, _ := ioutil.ReadAll(resp.Body)
-	log.Printf("Response Body: %s", contents)
+	if resp.StatusCode != 200 {
+		log.Printf("Status code while updating post was %d", resp.StatusCode)
+		log.Printf("Response: %s", resp)
+		contents, _ := ioutil.ReadAll(resp.Body)
+		log.Printf("Response Body: %s", contents)
+	} else {
+		log.Printf("Successfully updated post for postid: %d", postID)
+	}
 }
-
-/*
-POST /posts
-Fields:
--raw: Mein Testpost
--topic_id: 106
--reply_to_post_number: ?
--category: 16
--archetype: regular
--auto_close_time: ""
-Content-Type:application/json; charset=utf-8
-*/

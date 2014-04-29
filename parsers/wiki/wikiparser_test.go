@@ -40,5 +40,7 @@ func TestParseWiki(t *testing.T) {
 	if sl == nil {
 		t.Error("Can't parse slot list")
 	}
-
+	if len(sl.SlotListGroups) != 2 {
+		t.Errorf("Count of Groups wrong")
+	}
 }

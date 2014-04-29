@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/blang/e12bot/config"
@@ -18,6 +17,20 @@ import (
 
 var cfg *config.Config
 var api *discourse.API
+
+type TopicNextUpdate struct {
+	m map[int]time.Time
+	sync.RWMutex
+}
+
+const (
+	UpdateInterval = time.Second * 60
+	CheckInterval  = time.Second * 10
+)
+
+var topicNextUpdate = &TopicNextUpdate{m: make(map[int]time.Time)}
+
+var update = time.Now().Add(10 * time.Second)
 
 var (
 	listen     = flag.String("listen", ":8081", "addr to listen on")
@@ -51,9 +64,9 @@ func main() {
 		wg.Add(1)
 		go processTopics()
 		wg.Wait()
-		break
+		// break
 		select {
-		case <-time.After(10 * time.Second):
+		case <-time.After(CheckInterval):
 
 		}
 	}
@@ -79,9 +92,22 @@ func processTopics() {
 		log.Printf("Can't get topiclist")
 	}
 	for _, t := range feed.TopicList.Topics {
-		if !t.Closed || t.Closed { //TODO: Fix
+		log.Printf("Scan Topic: %d: %s", t.Id, t.Title)
+		if !t.Closed { //TODO: Fix
+			topicNextUpdate.RLock()
+			nextUpdate, found := topicNextUpdate.m[t.Id]
+			topicNextUpdate.RUnlock()
+			if found && time.Now().Before(nextUpdate) {
+				log.Printf("Topic %d does not need an update yet", t.Id)
+				continue
+			}
 			wg.Add(1)
 			go processTopic(t)
+		} else {
+			// Cleanup map
+			topicNextUpdate.Lock()
+			delete(topicNextUpdate.m, t.Id)
+			topicNextUpdate.Unlock()
 		}
 	}
 
@@ -117,10 +143,8 @@ func processTopic(t *discourse.DiscourseTopic) {
 					log.Printf("Error while parsing wiki url %s: %s", l.Url, err)
 					continue
 				}
-				json, err := json.Marshal(slotlist)
-				log.Printf("Slotlist found for: %s", l.Url)
-				log.Printf("Slotlist: %s", json)
 
+				log.Printf("Slotlist found for %s, slotgroups: %d", l.Url, len(slotlist.SlotListGroups))
 			} else {
 				log.Printf("No Praser for link %s", l.Url)
 			}
@@ -132,41 +156,42 @@ func processTopic(t *discourse.DiscourseTopic) {
 }
 
 func handleMissionTopic(feed *discourse.DiscoursePostFeed, slotlist *parsing.SlotList) {
-	log.Printf("Handle Mission Topic ID %d", feed.TopicID)
+	// log.Printf("Handle Mission Topic ID %d", feed.TopicID)
 	defer wg.Done()
 	for i, post := range feed.PostStream.Posts {
 		if i == 0 {
 			continue
 		}
-		log.Printf("Scan post id %d", post.Id)
+		// log.Printf("Scan post id %d", post.Id)
 		if post.Username == api.User {
 			//post found
-			updatePost(post, slotlist)
+			updatePost(post, slotlist, feed.TopicID)
 			return
 		}
 	}
 	createPost(feed, slotlist)
 }
 
-func updatePost(post *discourse.DiscoursePost, slotlist *parsing.SlotList) {
+func updatePost(post *discourse.DiscoursePost, slotlist *parsing.SlotList, topicID int) {
 	log.Printf("Update post id %d", post.Id)
 	if post == nil {
 		log.Printf("Post is nil")
 		return
 	}
 	if slotlist == nil {
-		log.Printf("Slostlist is nil")
-		return
+		log.Printf("Slostlist is nil, which is ok")
 	}
 
 	slotListStr := EncodeSlotList(slotlist)
 	api.UpdatePost(post.Id, "Update slotlist", slotListStr)
+	topicNextUpdate.Lock()
+	topicNextUpdate.m[topicID] = time.Now().Add(UpdateInterval)
+	topicNextUpdate.Unlock()
 }
 
 func createPost(feed *discourse.DiscoursePostFeed, slotlist *parsing.SlotList) {
 	if slotlist == nil {
-		log.Printf("Slotlist is nil")
-		return
+		log.Printf("Slotlist is nil, which is ok")
 	}
 	log.Printf("Create post")
 
@@ -179,6 +204,9 @@ func createPost(feed *discourse.DiscoursePostFeed, slotlist *parsing.SlotList) {
 	}
 
 	api.CreatePost(createPost)
+	topicNextUpdate.Lock()
+	topicNextUpdate.m[feed.TopicID] = time.Now().Add(UpdateInterval)
+	topicNextUpdate.Unlock()
 }
 
 func ParserUrl(url string) string {

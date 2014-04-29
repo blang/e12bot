@@ -2,7 +2,6 @@ package wiki
 
 import (
 	parser "github.com/blang/e12bot/parsing"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,7 +14,6 @@ type WikiParser struct {
 }
 
 func (w *WikiParser) Accept(url string) bool {
-	log.Printf("Try to accept: %s", url)
 	return strings.Contains(url, "http://wiki.echo12.de/wiki/")
 }
 
@@ -30,12 +28,10 @@ func (w *WikiParser) Parse(input string, url string) *parser.SlotList {
 	inSlotlist := false
 	for _, line := range lines {
 		if !inSlotlist && strings.HasPrefix(line, "{|") && strings.Contains(line, "wikitable") {
-			// t.Logf("Start found at line %d", i)
 			inSlotlist = true
 			continue
 		}
 		if inSlotlist && strings.HasPrefix(line, "|}") {
-			// t.Logf("End found at line %d", i)
 			inSlotlist = true
 			break
 		}
@@ -63,7 +59,6 @@ func sanitize(s string) string {
 
 func parseSlot(line string, group *parser.SlotListGroup) {
 	m := slotRegex.FindStringSubmatch(line)
-	// t.Logf("Found match at line : %d %s", i+1, m[1:])
 	slot := &parser.SlotListSlot{}
 	if len(m) > 1 {
 		num, err := strconv.Atoi(m[1])
@@ -89,6 +84,5 @@ func parseGroup(line string, slotlist *parser.SlotList, group *parser.SlotListGr
 	if len(m) > 1 {
 		slotgroup.Name = sanitize(m[1])
 	}
-
 	return slotgroup
 }
