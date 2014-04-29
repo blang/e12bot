@@ -51,6 +51,7 @@ func main() {
 		wg.Add(1)
 		go processTopics()
 		wg.Wait()
+		break
 		select {
 		case <-time.After(10 * time.Second):
 
@@ -68,9 +69,11 @@ func bootstrapParsers() {
 }
 
 func processTopics() {
+	defer wg.Done()
 	feed, err := api.CategoryFeed(cfg.Category)
 	if err != nil {
 		log.Printf("Can't fetch category feed: %s", err)
+		return
 	}
 	if feed.TopicList == nil {
 		log.Printf("Can't get topiclist")
@@ -81,17 +84,20 @@ func processTopics() {
 			go processTopic(t)
 		}
 	}
-	wg.Done()
+
 }
 
 func processTopic(t *discourse.DiscourseTopic) {
+	defer wg.Done()
 	feed, err := api.PostFeed(t.Id)
 	if err != nil {
 		log.Printf("Can't fetch post feed of id %d: %s", t.Id, err)
 	}
 	if feed.PostStream == nil {
 		log.Printf("Can't get poststream")
+		return
 	}
+	var slotlist *parsing.SlotList
 	for i, p := range feed.PostStream.Posts {
 		if i > 0 {
 			break
@@ -105,22 +111,83 @@ func processTopic(t *discourse.DiscourseTopic) {
 					log.Printf("Error while fetching url %s, error: %s", l.Url, err)
 					continue
 				}
-				sl := parsers.Parse(string(b[:]), l.Url)
+				slotlist = parsers.Parse(string(b[:]), l.Url)
 
-				if sl == nil {
+				if slotlist == nil {
 					log.Printf("Error while parsing wiki url %s: %s", l.Url, err)
 					continue
 				}
-				json, err := json.Marshal(sl)
+				json, err := json.Marshal(slotlist)
 				log.Printf("Slotlist found for: %s", l.Url)
 				log.Printf("Slotlist: %s", json)
 
 			} else {
-				log.Printf("No Parser for link %s", l.Url)
+				log.Printf("No Praser for link %s", l.Url)
 			}
 		}
 	}
-	wg.Done()
+
+	wg.Add(1)
+	go handleMissionTopic(feed, slotlist)
+}
+
+func handleMissionTopic(feed *discourse.DiscoursePostFeed, slotlist *parsing.SlotList) {
+	log.Printf("Handle Mission Topic ID %d", feed.TopicID)
+	defer wg.Done()
+	for i, post := range feed.PostStream.Posts {
+		if i == 0 {
+			continue
+		}
+		log.Printf("Scan post id %d", post.Id)
+		if post.Username == api.User {
+			//post found
+			updatePost(post, slotlist)
+			return
+		}
+	}
+	createPost(feed, slotlist)
+}
+
+func updatePost(post *discourse.DiscoursePost, slotlist *parsing.SlotList) {
+	log.Printf("Update post id %d", post.Id)
+	if post == nil {
+		log.Printf("Post is nil")
+		return
+	}
+	if slotlist == nil {
+		log.Printf("Slostlist is nil")
+		return
+	}
+	b, err := json.MarshalIndent(slotlist, "", " ")
+	if err != nil {
+		log.Printf("Marshal slotlist failed: %s", err)
+		return
+	}
+	log.Printf("Marshall slotlist to post: %s", string(b[:]))
+	//post.Id
+	api.UpdatePost(post.Id, "Update slotlist", string(b[:]))
+}
+
+func createPost(feed *discourse.DiscoursePostFeed, slotlist *parsing.SlotList) {
+	if slotlist == nil {
+		log.Printf("Slotlist is nil")
+		return
+	}
+	log.Printf("Create post")
+	b, err := json.MarshalIndent(slotlist, "", " ")
+	if err != nil {
+		log.Printf("Marshal slotlist failed: %s", err)
+		return
+	}
+	log.Printf("Marshall slotlist to post: %s", string(b[:]))
+	//return
+	createPost := &discourse.DiscourseCreatePost{
+		TopicID:    feed.TopicID,
+		CategoryID: feed.CategoryID,
+		Archetype:  "regular",
+		Raw:        string(b[:]),
+	}
+	api.CreatePost(createPost)
 }
 
 func ParserUrl(url string) string {
