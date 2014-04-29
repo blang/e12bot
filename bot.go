@@ -158,14 +158,9 @@ func updatePost(post *discourse.DiscoursePost, slotlist *parsing.SlotList) {
 		log.Printf("Slostlist is nil")
 		return
 	}
-	b, err := json.MarshalIndent(slotlist, "", " ")
-	if err != nil {
-		log.Printf("Marshal slotlist failed: %s", err)
-		return
-	}
-	log.Printf("Marshall slotlist to post: %s", string(b[:]))
-	//post.Id
-	api.UpdatePost(post.Id, "Update slotlist", string(b[:]))
+
+	slotListStr := EncodeSlotList(slotlist)
+	api.UpdatePost(post.Id, "Update slotlist", slotListStr)
 }
 
 func createPost(feed *discourse.DiscoursePostFeed, slotlist *parsing.SlotList) {
@@ -174,19 +169,15 @@ func createPost(feed *discourse.DiscoursePostFeed, slotlist *parsing.SlotList) {
 		return
 	}
 	log.Printf("Create post")
-	b, err := json.MarshalIndent(slotlist, "", " ")
-	if err != nil {
-		log.Printf("Marshal slotlist failed: %s", err)
-		return
-	}
-	log.Printf("Marshall slotlist to post: %s", string(b[:]))
-	//return
+
+	slotListStr := EncodeSlotList(slotlist)
 	createPost := &discourse.DiscourseCreatePost{
 		TopicID:    feed.TopicID,
 		CategoryID: feed.CategoryID,
 		Archetype:  "regular",
-		Raw:        string(b[:]),
+		Raw:        slotListStr,
 	}
+
 	api.CreatePost(createPost)
 }
 
@@ -207,9 +198,6 @@ func HTTPGet(path string) ([]byte, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Invalid status code %s", resp.Header["Status"][0])
 	}
-	// if !strings.Contains(resp.Header["Content-Type"][0], "application/json") {
-	// 	return nil, fmt.Errorf("Invalid content type %s", resp.Header["Content-Type"][0])
-	// }
 
 	return body, nil
 }
