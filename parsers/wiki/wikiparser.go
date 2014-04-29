@@ -42,39 +42,14 @@ func (w *WikiParser) Parse(input string, url string) *parser.SlotList {
 
 		if inSlotlist {
 			if slotRegex.MatchString(line) {
-				m := slotRegex.FindStringSubmatch(line)
-				// t.Logf("Found match at line : %d %s", i+1, m[1:])
-				slot := &parser.SlotListSlot{}
-				if len(m) > 1 {
-					num, err := strconv.Atoi(m[1])
-					if err == nil {
-						slot.Number = num
-					}
-				}
-				if len(m) > 2 {
-					slot.Name = sanitize(m[2])
-				}
-				if len(m) > 3 {
-					slot.User = sanitize(m[3])
-				}
-				group.Slots = append(group.Slots, slot)
-
+				parseSlot(line, group)
 			} else if slotDescRegex.MatchString(line) {
-				m := slotDescRegex.FindStringSubmatch(line)
-				slotgroup := &parser.SlotListGroup{}
-				if len(m) > 1 {
-					slotgroup.Name = sanitize(m[1])
-				}
-
-				if len(group.Slots) > 0 {
-					slotlist.SlotListGroups = append(slotlist.SlotListGroups, group)
-				}
-				group = slotgroup
-				// t.Logf("Desc Found match at line : %d %s", i+1, m[1:])
-				//slots = append(slots, line)
-
+				group = parseGroup(line, slotlist, group)
 			}
 		}
+	}
+	if len(group.Slots) > 0 {
+		slotlist.SlotListGroups = append(slotlist.SlotListGroups, group)
 	}
 	return slotlist
 
@@ -82,6 +57,38 @@ func (w *WikiParser) Parse(input string, url string) *parser.SlotList {
 
 func sanitize(s string) string {
 	s = strings.Replace(s, "'", "", -1)
-	s = strings.Trim(s, " \t.:")
+	s = strings.Trim(s, " \t.:\r")
 	return s
+}
+
+func parseSlot(line string, group *parser.SlotListGroup) {
+	m := slotRegex.FindStringSubmatch(line)
+	// t.Logf("Found match at line : %d %s", i+1, m[1:])
+	slot := &parser.SlotListSlot{}
+	if len(m) > 1 {
+		num, err := strconv.Atoi(m[1])
+		if err == nil {
+			slot.Number = num
+		}
+	}
+	if len(m) > 2 {
+		slot.Name = sanitize(m[2])
+	}
+	if len(m) > 3 {
+		slot.User = sanitize(m[3])
+	}
+	group.Slots = append(group.Slots, slot)
+}
+
+func parseGroup(line string, slotlist *parser.SlotList, group *parser.SlotListGroup) *parser.SlotListGroup {
+	m := slotDescRegex.FindStringSubmatch(line)
+	if len(group.Slots) > 0 {
+		slotlist.SlotListGroups = append(slotlist.SlotListGroups, group)
+	}
+	slotgroup := &parser.SlotListGroup{}
+	if len(m) > 1 {
+		slotgroup.Name = sanitize(m[1])
+	}
+
+	return slotgroup
 }

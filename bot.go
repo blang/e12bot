@@ -44,18 +44,23 @@ type HTMLPrintable interface {
 
 func main() {
 	bootstrapParsers()
+	go startServer()
 	for {
 		fmt.Printf("Go on\n")
 		wg = sync.WaitGroup{}
 		wg.Add(1)
 		go processTopics()
 		wg.Wait()
-		break
 		select {
 		case <-time.After(10 * time.Second):
 
 		}
 	}
+}
+
+func startServer() {
+	http.HandleFunc("/slotlist", handleSlotlist)
+	http.ListenAndServe(*listen, nil)
 }
 
 func bootstrapParsers() {
