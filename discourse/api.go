@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/blang/e12bot/config"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -22,13 +23,15 @@ func APIFromConfig(c *config.Config) *API {
 	}
 	return &API{
 		Key:     c.ApiKey,
-		User:    c.ApiURL,
+		User:    c.ApiUser,
 		BaseURL: c.ApiURL,
 	}
 }
 
 func (api *API) Get(path string) ([]byte, error) {
-	resp, err := http.Get(api.BaseURL + path + "?api_key=" + api.Key + "&api_username=" + api.User)
+	url := api.BaseURL + path + "?api_key=" + api.Key + "&api_username=" + api.User
+	log.Printf("Get: %s", url)
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
