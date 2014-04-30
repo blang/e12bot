@@ -26,7 +26,7 @@ func TestCategoryFeed(t *testing.T) {
 
 func TestPostFeed(t *testing.T) {
 	api := freshAPI()
-	feed, err := api.PostFeed(93)
+	feed, err := api.PostFeed(93, 1)
 	if err != nil {
 		t.Fatalf("Error while fetching category feed", err)
 	}

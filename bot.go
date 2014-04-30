@@ -121,7 +121,7 @@ func processTopic(t *discourse.DiscourseTopic) {
 		log.Printf("Topic ID wrong")
 		return
 	}
-	feed, err := api.PostFeed(t.Id)
+	feed, err := api.PostFeed(t.Id, 1)
 	if err != nil {
 		log.Printf("Can't fetch post feed of id %d: %s", t.Id, err)
 		return
@@ -135,10 +135,11 @@ func processTopic(t *discourse.DiscourseTopic) {
 		return
 	}
 	var slotlist *parsing.SlotList
-	for i, p := range feed.PostStream.Posts {
-		if i > 0 {
-			break
-		}
+
+	if len(feed.PostStream.Posts) > 0 {
+
+		//Search first post for links
+		p := feed.PostStream.Posts[0]
 		for _, l := range p.Links {
 			if parsers.Accept(l.Url) {
 
@@ -160,60 +161,75 @@ func processTopic(t *discourse.DiscourseTopic) {
 				log.Printf("No Praser for link %s", l.Url)
 			}
 		}
-	}
+		topicID := feed.TopicID
+		categoryID := feed.CategoryID
 
-	wg.Add(1)
-	go handleMissionTopic(feed, slotlist)
+		//find bot post
+		botpost := findBotPost(feed)
+		if botpost > 0 {
+			updatePost(topicID, botpost, slotlist)
+		} else {
+			createPost(topicID, categoryID, slotlist)
+		}
+
+	} else {
+		log.Printf("No posts on stream for topic %d", feed.TopicID)
+		return
+	}
 }
 
-func handleMissionTopic(feed *discourse.DiscoursePostFeed, slotlist *parsing.SlotList) {
-	defer wg.Done()
-	for i, post := range feed.PostStream.Posts {
-		if i == 0 {
-			continue
+//Sideeffect: Changes feed
+func findBotPost(feed *discourse.DiscoursePostFeed) int {
+	page := 1
+	var err error
+	for feed != nil && feed.PostStream != nil && len(feed.PostStream.Posts) > 0 {
+		for _, p := range feed.PostStream.Posts {
+			if p.Username == api.User {
+				return p.Id
+			}
 		}
-		// log.Printf("Scan post id %d", post.Id)
-		if post.Username == api.User {
-			//post found
-			updatePost(post, slotlist, feed.TopicID)
-			return
+		page += 1
+		feed, err = api.PostFeed(feed.TopicID, page)
+		if err != nil {
+			log.Printf("Can not get feed page %d for topic %d", page, feed.TopicID)
+			return 0
 		}
 	}
-	createPost(feed, slotlist)
+	return 0
 }
 
-func updatePost(post *discourse.DiscoursePost, slotlist *parsing.SlotList, topicID int) {
-	log.Printf("Update post id %d", post.Id)
-	if post == nil || post.Id == 0 {
+func updatePost(topicID int, postID int, slotlist *parsing.SlotList) {
+	log.Printf("Update post id %d on topic %d", postID, topicID)
+	if postID == 0 {
 		log.Printf("Post is not correct")
 		return
 	}
 
 	slotListStr := EncodeSlotList(slotlist)
-	api.UpdatePost(post.Id, "Update slotlist", slotListStr)
+	api.UpdatePost(postID, "Update slotlist", slotListStr)
 	topicNextUpdate.Lock()
 	topicNextUpdate.m[topicID] = time.Now().Add(UpdateInterval)
 	topicNextUpdate.Unlock()
 }
 
-func createPost(feed *discourse.DiscoursePostFeed, slotlist *parsing.SlotList) {
-	log.Printf("Create post for topic %d", feed.TopicID)
-	if feed.TopicID == 0 || feed.CategoryID == 0 {
-		log.Printf("Wrong feed to create post %s", feed)
+func createPost(topicID int, categoryID int, slotlist *parsing.SlotList) {
+	log.Printf("Create post for topic %d", topicID)
+	if topicID == 0 || categoryID == 0 {
+		log.Printf("Topicid %d or categoryid %d wrong", topicID, categoryID)
 		return
 	}
 
 	slotListStr := EncodeSlotList(slotlist)
 	createPost := &discourse.DiscourseCreatePost{
-		TopicID:    feed.TopicID,
-		CategoryID: feed.CategoryID,
+		TopicID:    topicID,
+		CategoryID: categoryID,
 		Archetype:  "regular",
 		Raw:        slotListStr,
 	}
 
 	api.CreatePost(createPost)
 	topicNextUpdate.Lock()
-	topicNextUpdate.m[feed.TopicID] = time.Now().Add(UpdateInterval)
+	topicNextUpdate.m[topicID] = time.Now().Add(UpdateInterval)
 	topicNextUpdate.Unlock()
 }
 

@@ -29,8 +29,11 @@ func APIFromConfig(c *config.Config) *API {
 	}
 }
 
-func (api *API) Get(path string) ([]byte, error) {
-	url := api.BaseURL + path + "?api_key=" + api.Key + "&api_username=" + api.User
+func (api *API) Get(path string, values url.Values) ([]byte, error) {
+	values.Set("api_key", api.Key)
+	values.Set("api_username", api.User)
+
+	url := api.BaseURL + path + "?" + values.Encode()
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -62,9 +65,10 @@ type DiscourseTopic struct {
 }
 
 type DiscoursePostFeed struct {
-	PostStream *DiscoursePostStream `json:"post_stream"`
-	TopicID    int                  `json:"id"`
-	CategoryID int                  `json:"category_id"`
+	PostStream        *DiscoursePostStream `json:"post_stream"`
+	TopicID           int                  `json:"id"`
+	CategoryID        int                  `json:"category_id"`
+	HighestPostNumber int                  `json:"highest_post_number"`
 }
 
 type DiscoursePostStream struct {
@@ -90,7 +94,7 @@ type DiscoursePostLink struct {
 }
 
 func (api *API) CategoryFeed(categoryName string) (*DiscourseCategoryFeed, error) {
-	b, err := api.Get("/category/" + categoryName + ".json")
+	b, err := api.Get("/category/"+categoryName+".json", url.Values{})
 	if err != nil {
 		return nil, err
 	}
@@ -107,8 +111,10 @@ func (api *API) CategoryFeed(categoryName string) (*DiscourseCategoryFeed, error
 	return &feed, nil
 }
 
-func (api *API) PostFeed(topicId int) (*DiscoursePostFeed, error) {
-	b, err := api.Get("/t/" + strconv.Itoa(topicId) + ".json")
+func (api *API) PostFeed(topicId int, page int) (*DiscoursePostFeed, error) {
+	values := url.Values{}
+	values.Set("page", strconv.Itoa(page))
+	b, err := api.Get("/t/"+strconv.Itoa(topicId)+".json", values)
 	if err != nil {
 		return nil, err
 	}
@@ -121,17 +127,16 @@ func (api *API) PostFeed(topicId int) (*DiscoursePostFeed, error) {
 	if feed.PostStream == nil {
 		return nil, fmt.Errorf("Can't get post streamfrom json: %s", b)
 	}
-
 	return &feed, nil
-
 }
 
 func (api *API) CreatePost(createPost *DiscourseCreatePost) {
 	values := url.Values{
-		"topic_id":  {strconv.Itoa(createPost.TopicID)},
-		"category":  {strconv.Itoa(createPost.CategoryID)},
-		"archetype": {createPost.Archetype},
-		"raw":       {createPost.Raw},
+		"topic_id":    {strconv.Itoa(createPost.TopicID)},
+		"category":    {strconv.Itoa(createPost.CategoryID)},
+		"archetype":   {createPost.Archetype},
+		"raw":         {createPost.Raw},
+		"post_number": {"2"},
 	}
 	resp, err := http.PostForm(api.BaseURL+"/posts"+"?api_key="+api.Key+"&api_username="+api.User,
 		values)
