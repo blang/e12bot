@@ -61,7 +61,6 @@ func main() {
 	for {
 		fmt.Printf("Go on\n")
 		wg = sync.WaitGroup{}
-		wg.Add(1)
 		go processTopics()
 		wg.Wait()
 		// break
@@ -82,7 +81,6 @@ func bootstrapParsers() {
 }
 
 func processTopics() {
-	defer wg.Done()
 	feed, err := api.CategoryFeed(cfg.Category)
 	if err != nil {
 		log.Printf("Can't fetch category feed: %s", err)
