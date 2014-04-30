@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-var slotRegex = regexp.MustCompile("^\\|\\s*(\\d+)\\s*\\|\\|\\s*([\\w\\s-\\d]+).*?\\|\\|\\s*([\\w\\s-\\d'*]+)?")
-var slotDescRegex = regexp.MustCompile("^\\| .*?\\s+([\\w\\s-\\d'*]+)")
+var slotRegex = regexp.MustCompile("^\\|\\s*(\\d+)\\s*\\|\\|\\s*([\\pL\\s-\\d]+).*?\\|\\|\\s*([\\pL\\s-\\d'*]+)?")
+var slotDescRegex = regexp.MustCompile("^\\| .*?\\s+([\\pL\\s-\\d'*]+)")
 
 type WikiTableParser struct {
 }

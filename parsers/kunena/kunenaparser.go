@@ -8,7 +8,7 @@ import (
 )
 
 var slotlistBeginRegex = regexp.MustCompile("([Ss]lotlist|[Ss]lots|[Ss]lotliste)")
-var patternSlot = regexp.MustCompile("#*\\s*[^\\W\\d]*([\\d]+)\\s*([\\w\\s-\\d]+)\\s*:\\s*(.*?)$")
+var patternSlot = regexp.MustCompile("#*\\s*[^\\W\\d]*([\\d]+)\\s*([\\pL\\s-\\d]+)\\s*:\\s*(.*?)$")
 var patternTag = regexp.MustCompile("(\\<.*?\\>)")
 var patternGroup = regexp.MustCompile("<b>(.*?)</b>.*?<br.*?>")
 var slotlistEndRegex = regexp.MustCompile("</td>")
