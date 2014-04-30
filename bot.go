@@ -113,6 +113,10 @@ func processTopics() {
 
 func processTopic(t *discourse.DiscourseTopic) {
 	defer wg.Done()
+	if t != nil {
+		log.Printf("Topic nil")
+		return
+	}
 	feed, err := api.PostFeed(t.Id)
 	if err != nil {
 		log.Printf("Can't fetch post feed of id %d: %s", t.Id, err)
@@ -154,7 +158,6 @@ func processTopic(t *discourse.DiscourseTopic) {
 }
 
 func handleMissionTopic(feed *discourse.DiscoursePostFeed, slotlist *parsing.SlotList) {
-	// log.Printf("Handle Mission Topic ID %d", feed.TopicID)
 	defer wg.Done()
 	for i, post := range feed.PostStream.Posts {
 		if i == 0 {
