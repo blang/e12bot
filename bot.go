@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/blang/e12bot/config"
 	"github.com/blang/e12bot/discourse"
+	"github.com/blang/e12bot/parsers/kunena"
 	"github.com/blang/e12bot/parsers/wiki"
 	"github.com/blang/e12bot/parsing"
 	"io/ioutil"
@@ -78,6 +79,7 @@ func startServer() {
 
 func bootstrapParsers() {
 	parsers.Handle(&wiki.WikiTableParser{})
+	parsers.Handle(&kunena.KunenaParser{})
 }
 
 func processTopics() {

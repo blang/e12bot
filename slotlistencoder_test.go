@@ -48,5 +48,4 @@ func TestTemplate(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error while new template: %s", err)
 	}
-	t.Logf("Output: %s", buff.String())
 }

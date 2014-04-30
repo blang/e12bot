@@ -133,7 +133,6 @@ func (api *API) CreatePost(createPost *DiscourseCreatePost) {
 		"archetype": {createPost.Archetype},
 		"raw":       {createPost.Raw},
 	}
-	log.Printf("Values to post: %s", values)
 	resp, err := http.PostForm(api.BaseURL+"/posts"+"?api_key="+api.Key+"&api_username="+api.User,
 		values)
 	if err != nil {
@@ -143,9 +142,6 @@ func (api *API) CreatePost(createPost *DiscourseCreatePost) {
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		log.Printf("Status code while creating post was %d", resp.StatusCode)
-		log.Printf("Response: %s", resp)
-		contents, _ := ioutil.ReadAll(resp.Body)
-		log.Printf("Response Body: %s", contents)
 	}
 	log.Printf("Successfully created post for topic: %d", createPost.TopicID)
 }

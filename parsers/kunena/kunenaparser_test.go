@@ -70,7 +70,7 @@ Modstring:</b><br />
 #20 Doorgunner: <span style="color:#ffbb00">HG2012 Atze</span><br />
 #21 Doorgunner: <span style="color:#ffbb00">HG2012 Neville</span>	</div>
 </div>
-<div>
+</div>
 </td>
 
 `
@@ -88,6 +88,17 @@ func TestParseSlotlist(t *testing.T) {
 			Convey("Slotlist can be parsed", func() {
 				So(sl, ShouldNotBeNil)
 			})
+
+			Convey("Has 4 groups", func() {
+				So(len(sl.SlotListGroups), ShouldEqual, 4)
+				Convey("Second Group", func() {
+					g := sl.SlotListGroups[1]
+					Convey("Has 10 slots", func() {
+						So(len(g.Slots), ShouldEqual, 10)
+					})
+				})
+			})
+
 		})
 	})
 }

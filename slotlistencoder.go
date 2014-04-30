@@ -6,14 +6,24 @@ import (
 	"strconv"
 )
 
+const errorStr = "Ich konnte bisher keine Slotliste bekommen, aber vll kommt da ja noch was!\n"
+
 func EncodeSlotList(slotlist *parsing.SlotList) string {
 	if slotlist == nil {
-		return "Ich konnte bisher keine Slotliste bekommen, aber vll kommt da ja noch was!\n"
+		return errorStr
 	}
 	buff := bytes.NewBufferString("")
 	buff.WriteString("# Slotliste\n")
+	if len(slotlist.SlotListGroups) > 20 {
+		return errorStr
+	}
 	for _, g := range slotlist.SlotListGroups {
-		buff.WriteString("##" + g.Name + "\n")
+		if len(g.Slots) > 20 {
+			return errorStr
+		}
+		if g.Name != "" {
+			buff.WriteString("##" + g.Name + "\n")
+		}
 		if g.Description != "" {
 			buff.WriteString(g.Description + "\n")
 		}
