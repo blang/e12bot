@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -13,11 +12,11 @@ func handleSlotlist(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		body = r.PostFormValue("body")
 		url = r.PostFormValue("url")
-		json, err := parseSlotlist(url, body)
+		parsed, err := parseSlotlist(url, body)
 		if err != nil {
 			output = err.Error()
 		} else {
-			output = json
+			output = parsed
 		}
 	}
 	fmt.Fprintf(w, "<html><head></head><body><h1>Teste Slotlistparsing</h1>"+
@@ -39,6 +38,6 @@ func parseSlotlist(url string, text string) (string, error) {
 	if sl == nil {
 		return "", fmt.Errorf("Error while parsing url %s", url)
 	}
-	json, _ := json.MarshalIndent(sl, "", " ")
-	return string(json), nil
+	parsed := EncodeSlotList(sl)
+	return parsed, nil
 }
