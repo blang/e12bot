@@ -27,7 +27,7 @@ type TopicNextUpdate struct {
 
 const (
 	UpdateInterval = time.Minute * 5
-	CheckInterval  = time.Minute * 2
+	CheckInterval  = time.Minute * 1
 )
 
 var topicNextUpdate = &TopicNextUpdate{m: make(map[int]time.Time)}
