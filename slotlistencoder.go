@@ -14,6 +14,7 @@ func EncodeSlotList(slotlist *parsing.SlotList) string {
 	}
 	buff := bytes.NewBufferString("")
 	buff.WriteString("# Slotliste\n")
+	buff.WriteString("*(Update alle 5 Minuten)*\n\n")
 	if len(slotlist.SlotListGroups) > 20 {
 		return errorStr
 	}
@@ -40,5 +41,6 @@ func EncodeSlotList(slotlist *parsing.SlotList) string {
 			buff.WriteString("\n\n")
 		}
 	}
+
 	return buff.String()
 }
