@@ -47,6 +47,10 @@ func (p *KunenaParser) Parse(input string, url string) *parsing.SlotList {
 	if len(group.Slots) > 0 {
 		slotlist.SlotListGroups = append(slotlist.SlotListGroups, group)
 	}
+	//Don't return empty slotlist, return nil
+	if len(slotlist.SlotListGroups) == 0 {
+		return nil
+	}
 	return slotlist
 }
 

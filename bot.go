@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "expvar"
 	"flag"
 	"fmt"
 	"github.com/blang/e12bot/config"
@@ -25,18 +26,15 @@ type TopicNextUpdate struct {
 }
 
 const (
-	UpdateInterval = time.Second * 60
-	CheckInterval  = time.Second * 10
+	UpdateInterval = time.Minute * 5
+	CheckInterval  = time.Minute * 2
 )
 
 var topicNextUpdate = &TopicNextUpdate{m: make(map[int]time.Time)}
 
-var update = time.Now().Add(10 * time.Second)
-
 var (
 	listen     = flag.String("listen", ":8081", "addr to listen on")
 	configFile = flag.String("config", "./config.json", "config file")
-	logFile    = flag.String("log", "./log", "log file")
 )
 
 func init() {
@@ -90,10 +88,10 @@ func processTopics() {
 	}
 	if feed.TopicList == nil {
 		log.Printf("Can't get topiclist")
+		return
 	}
 	for _, t := range feed.TopicList.Topics {
-		log.Printf("Scan Topic: %d: %s", t.Id, t.Title)
-		if !t.Closed { //TODO: Fix
+		if !t.Closed {
 			topicNextUpdate.RLock()
 			nextUpdate, found := topicNextUpdate.m[t.Id]
 			topicNextUpdate.RUnlock()
@@ -119,9 +117,18 @@ func processTopic(t *discourse.DiscourseTopic) {
 		log.Printf("Topic nil")
 		return
 	}
+	if !(t.Id > 0) {
+		log.Printf("Topic ID wrong")
+		return
+	}
 	feed, err := api.PostFeed(t.Id)
 	if err != nil {
 		log.Printf("Can't fetch post feed of id %d: %s", t.Id, err)
+		return
+	}
+	if feed == nil {
+		log.Println("Can't get feed")
+		return
 	}
 	if feed.PostStream == nil {
 		log.Printf("Can't get poststream")
@@ -135,7 +142,7 @@ func processTopic(t *discourse.DiscourseTopic) {
 		for _, l := range p.Links {
 			if parsers.Accept(l.Url) {
 
-				log.Printf("Found interesting link %s on Topic %d on Post %d", l.Url, t.Id, p.Id)
+				// log.Printf("Found interesting link %s on Topic %d on Post %d", l.Url, t.Id, p.Id)
 				b, err := HTTPGet(ParserUrl(l.Url))
 				if err != nil {
 					log.Printf("Error while fetching url %s, error: %s", l.Url, err)
@@ -144,7 +151,7 @@ func processTopic(t *discourse.DiscourseTopic) {
 				slotlist = parsers.Parse(string(b[:]), l.Url)
 
 				if slotlist == nil {
-					log.Printf("Error while parsing wiki url %s: %s", l.Url, err)
+					log.Printf("Nil slotlist while parsing url %s: %s", l.Url, err)
 					continue
 				}
 
@@ -177,12 +184,9 @@ func handleMissionTopic(feed *discourse.DiscoursePostFeed, slotlist *parsing.Slo
 
 func updatePost(post *discourse.DiscoursePost, slotlist *parsing.SlotList, topicID int) {
 	log.Printf("Update post id %d", post.Id)
-	if post == nil {
-		log.Printf("Post is nil")
+	if post == nil || post.Id == 0 {
+		log.Printf("Post is not correct")
 		return
-	}
-	if slotlist == nil {
-		log.Printf("Slostlist is nil, which is ok")
 	}
 
 	slotListStr := EncodeSlotList(slotlist)
@@ -193,10 +197,11 @@ func updatePost(post *discourse.DiscoursePost, slotlist *parsing.SlotList, topic
 }
 
 func createPost(feed *discourse.DiscoursePostFeed, slotlist *parsing.SlotList) {
-	if slotlist == nil {
-		log.Printf("Slotlist is nil, which is ok")
+	log.Printf("Create post for topic %d", feed.TopicID)
+	if feed.TopicID == 0 || feed.CategoryID == 0 {
+		log.Printf("Wrong feed to create post %s", feed)
+		return
 	}
-	log.Printf("Create post")
 
 	slotListStr := EncodeSlotList(slotlist)
 	createPost := &discourse.DiscourseCreatePost{
