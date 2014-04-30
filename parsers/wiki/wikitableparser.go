@@ -7,17 +7,17 @@ import (
 	"strings"
 )
 
-var slotRegex = regexp.MustCompile("^\\| (\\d+) \\|\\|\\s+([\\w\\s-\\d]+).*?\\|\\|\\s+([\\w\\s-\\d'*]+)?")
+var slotRegex = regexp.MustCompile("^\\|\\s*(\\d+)\\s*\\|\\|\\s*([\\w\\s-\\d]+).*?\\|\\|\\s*([\\w\\s-\\d'*]+)?")
 var slotDescRegex = regexp.MustCompile("^\\| .*?\\s+([\\w\\s-\\d'*]+)")
 
-type WikiParser struct {
+type WikiTableParser struct {
 }
 
-func (w *WikiParser) Accept(url string) bool {
+func (w *WikiTableParser) Accept(url string) bool {
 	return strings.Contains(url, "http://wiki.echo12.de/wiki/")
 }
 
-func (w *WikiParser) Parse(input string, url string) *parser.SlotList {
+func (w *WikiTableParser) Parse(input string, url string) *parser.SlotList {
 	if !strings.Contains(url, "http://wiki.echo12.de/wiki/") {
 		return nil
 	}

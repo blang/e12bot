@@ -77,7 +77,7 @@ func startServer() {
 }
 
 func bootstrapParsers() {
-	parsers.Handle(&wiki.WikiParser{})
+	parsers.Handle(&wiki.WikiTableParser{})
 }
 
 func processTopics() {
@@ -113,7 +113,7 @@ func processTopics() {
 
 func processTopic(t *discourse.DiscourseTopic) {
 	defer wg.Done()
-	if t != nil {
+	if t == nil {
 		log.Printf("Topic nil")
 		return
 	}
