@@ -19,7 +19,7 @@ func EncodeSlotList(slotlist *parsing.SlotList) string {
 		return errorStr
 	}
 	for _, g := range slotlist.SlotListGroups {
-		if len(g.Slots) > 20 {
+		if len(g.Slots) > 60 {
 			return errorStr
 		}
 		if g.Name != "" {
