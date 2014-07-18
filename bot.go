@@ -26,8 +26,9 @@ type TopicNextUpdate struct {
 }
 
 const (
-	UpdateInterval = time.Minute * 5
-	CheckInterval  = time.Minute * 1
+	UpdateInterval    = time.Minute * 5
+	ExtUpdateInterval = time.Minute * 20
+	CheckInterval     = time.Minute * 1
 )
 
 var topicNextUpdate = &TopicNextUpdate{m: make(map[int]time.Time)}
@@ -140,6 +141,7 @@ func processTopic(t *discourse.DiscourseTopic) {
 
 	if len(feed.PostStream.Posts) > 0 {
 
+		url := ""
 		//Search first post for links
 		p := feed.PostStream.Posts[0]
 		for _, l := range p.Links {
@@ -157,21 +159,24 @@ func processTopic(t *discourse.DiscourseTopic) {
 					log.Printf("Nil slotlist while parsing url %s: %s", l.Url, err)
 					continue
 				}
-
+				url = l.Url
 				log.Printf("Slotlist found for %s, slotgroups: %d", l.Url, len(slotlist.SlotListGroups))
 			} else {
 				log.Printf("No Praser for link %s", l.Url)
 			}
 		}
+
+		isExternal := IsExternal(url)
+
 		topicID := feed.TopicID
 		categoryID := feed.CategoryID
 
 		//find bot post
 		botpost := findBotPost(feed)
 		if botpost > 0 {
-			updatePost(topicID, botpost, slotlist)
+			updatePost(topicID, botpost, slotlist, isExternal)
 		} else {
-			createPost(topicID, categoryID, slotlist)
+			createPost(topicID, categoryID, slotlist, isExternal)
 		}
 
 	} else {
@@ -200,7 +205,7 @@ func findBotPost(feed *discourse.DiscoursePostFeed) int {
 	return 0
 }
 
-func updatePost(topicID int, postID int, slotlist *parsing.SlotList) {
+func updatePost(topicID int, postID int, slotlist *parsing.SlotList, isExternal bool) {
 	log.Printf("Update post id %d on topic %d", postID, topicID)
 	if postID == 0 {
 		log.Printf("Post is not correct")
@@ -210,11 +215,15 @@ func updatePost(topicID int, postID int, slotlist *parsing.SlotList) {
 	slotListStr := EncodeSlotList(slotlist)
 	api.UpdatePost(postID, "Update slotlist", slotListStr)
 	topicNextUpdate.Lock()
-	topicNextUpdate.m[topicID] = time.Now().Add(UpdateInterval)
+	if isExternal {
+		topicNextUpdate.m[topicID] = time.Now().Add(ExtUpdateInterval)
+	} else {
+		topicNextUpdate.m[topicID] = time.Now().Add(UpdateInterval)
+	}
 	topicNextUpdate.Unlock()
 }
 
-func createPost(topicID int, categoryID int, slotlist *parsing.SlotList) {
+func createPost(topicID int, categoryID int, slotlist *parsing.SlotList, isExternal bool) {
 	log.Printf("Create post for topic %d", topicID)
 	if topicID == 0 || categoryID == 0 {
 		log.Printf("Topicid %d or categoryid %d wrong", topicID, categoryID)
@@ -231,8 +240,16 @@ func createPost(topicID int, categoryID int, slotlist *parsing.SlotList) {
 
 	api.CreatePost(createPost)
 	topicNextUpdate.Lock()
-	topicNextUpdate.m[topicID] = time.Now().Add(UpdateInterval)
+	if isExternal {
+		topicNextUpdate.m[topicID] = time.Now().Add(ExtUpdateInterval)
+	} else {
+		topicNextUpdate.m[topicID] = time.Now().Add(UpdateInterval)
+	}
 	topicNextUpdate.Unlock()
+}
+
+func IsExternal(url string) bool {
+	return strings.Contains(url, "heeresgruppe2012.de")
 }
 
 func ParserUrl(url string) string {
