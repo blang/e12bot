@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-var slotRegex = regexp.MustCompile("^\\|\\s*(\\d+)\\s*\\|\\|\\s*([\\pL\\s-\\d\\.\\-\\(\\)]+).*?\\|\\|\\s*([\\pL\\s-\\d'*]+)?")
-var slotDescRegex = regexp.MustCompile("^\\| .*?\\s+([\\pL\\s-\\d\\.\\(\\)'*]+)")
+var slotRegex = regexp.MustCompile(`^\|\s*(\d+)\s*\|\|\s*([\pL\s-\d\.\-\(\)]+).*?\|\|\s*([\pL\s-\d'*]+)?(\|\|\s*([\pL\s-\d'*]+)?)?`)
+var slotDescRegex = regexp.MustCompile(`^\| .*?\s+([\pL\s-\d\.\(\)'*]+)`)
 
 type WikiTableParser struct {
 }
@@ -71,6 +71,9 @@ func parseSlot(line string, group *parser.SlotListGroup) {
 	}
 	if len(m) > 3 {
 		slot.User = sanitize(m[3])
+	}
+	if len(m) > 5 {
+		slot.Desc = sanitize(m[5])
 	}
 	group.Slots = append(group.Slots, slot)
 }

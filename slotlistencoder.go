@@ -38,6 +38,11 @@ func EncodeSlotList(slotlist *parsing.SlotList) string {
 			} else {
 				buff.WriteString("Frei")
 			}
+			if u.Desc != "" {
+				buff.WriteString(" (")
+				buff.WriteString(u.Desc)
+				buff.WriteString(")")
+			}
 			buff.WriteString("\n\n")
 		}
 	}

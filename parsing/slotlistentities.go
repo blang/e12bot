@@ -14,4 +14,5 @@ type SlotListSlot struct {
 	Number int
 	Name   string
 	User   string
+	Desc   string
 }
