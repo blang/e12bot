@@ -94,7 +94,7 @@ type DiscoursePostLink struct {
 }
 
 func (api *API) CategoryFeed(categoryName string) (*DiscourseCategoryFeed, error) {
-	b, err := api.Get("/category/"+categoryName+".json", url.Values{})
+	b, err := api.Get("/c/"+categoryName+".json", url.Values{})
 	if err != nil {
 		return nil, err
 	}
