@@ -265,8 +265,11 @@ func HTTPGet(path string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("Error on readall: %s", err)
+	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Invalid status code %s", resp.Header["Status"][0])
+		return nil, fmt.Errorf("Invalid status code %d", resp.StatusCode)
 	}
 
 	return body, nil
