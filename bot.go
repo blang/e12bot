@@ -194,9 +194,10 @@ func findBotPost(feed *discourse.DiscoursePostFeed) int {
 			}
 		}
 		page += 1
+		topicID := feed.TopicID
 		feed, err = api.PostFeed(feed.TopicID, page)
 		if err != nil {
-			log.Printf("Can not get feed page %d for topic %d", page, feed.TopicID)
+			log.Printf("Can not get feed page %d for topic %d", page, topicID)
 			return 0
 		}
 	}
