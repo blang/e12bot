@@ -3,13 +3,14 @@ package discourse
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/blang/e12bot/config"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/blang/e12bot/config"
 )
 
 type API struct {
@@ -41,12 +42,11 @@ func (api *API) Get(path string, values url.Values) ([]byte, error) {
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Invalid status code %s", resp.Header["Status"][0])
+		return nil, fmt.Errorf("Invalid status code %s", resp.Header["Status"])
 	}
-	if !strings.Contains(resp.Header["Content-Type"][0], "application/json") {
-		return nil, fmt.Errorf("Invalid content type %s", resp.Header["Content-Type"][0])
+	if r, ok := resp.Header["Content-Type"]; !ok || len(r) == 0 || !strings.Contains(r[0], "json") {
+		return nil, fmt.Errorf("Invalid content type, should be json: %s", resp.Header["Content-Type"])
 	}
-
 	return body, nil
 }
 
