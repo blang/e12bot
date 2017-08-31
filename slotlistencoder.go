@@ -2,8 +2,9 @@ package main
 
 import (
 	"bytes"
-	"github.com/blang/e12bot/parsing"
 	"strconv"
+
+	"github.com/blang/e12bot/parsing"
 )
 
 const errorStr = "Ich konnte bisher keine Slotliste bekommen, aber vll kommt da ja noch was!\n"
@@ -23,7 +24,7 @@ func EncodeSlotList(slotlist *parsing.SlotList) string {
 			return errorStr
 		}
 		if g.Name != "" {
-			buff.WriteString("##" + g.Name + "\n")
+			buff.WriteString("## " + g.Name + "\n")
 		}
 		if g.Description != "" {
 			buff.WriteString(g.Description + "\n")
