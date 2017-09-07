@@ -4,16 +4,17 @@ import (
 	_ "expvar"
 	"flag"
 	"fmt"
-	"github.com/blang/e12bot/config"
-	"github.com/blang/e12bot/discourse"
-	"github.com/blang/e12bot/parsers/wiki"
-	"github.com/blang/e12bot/parsing"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/blang/e12bot/config"
+	"github.com/blang/e12bot/discourse"
+	"github.com/blang/e12bot/parsers/wiki"
+	"github.com/blang/e12bot/parsing"
 )
 
 var cfg *config.Config
@@ -252,7 +253,7 @@ func IsExternal(url string) bool {
 }
 
 func ParserUrl(url string) string {
-	if strings.Contains(url, "http://wiki.echo12.de/wiki/") {
+	if strings.Contains(url, "://wiki.echo12.de/wiki/") {
 		return url + "?action=raw"
 	}
 	return url

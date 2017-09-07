@@ -1,10 +1,11 @@
 package wiki
 
 import (
-	parser "github.com/blang/e12bot/parsing"
 	"regexp"
 	"strconv"
 	"strings"
+
+	parser "github.com/blang/e12bot/parsing"
 )
 
 var slotRegex = regexp.MustCompile(`^\|\s*(\d+)\s*\|\|\s*([\pL\s-\d\.\-\(\)]+).*?\|\|\s*([\pL\s-\d'*]+)?(\|\|\s*([\pL\s-\d'*]+)?)?`)
@@ -14,11 +15,11 @@ type WikiTableParser struct {
 }
 
 func (w *WikiTableParser) Accept(url string) bool {
-	return strings.Contains(url, "http://wiki.echo12.de/wiki/")
+	return strings.Contains(url, "://wiki.echo12.de/wiki/")
 }
 
 func (w *WikiTableParser) Parse(input string, url string) *parser.SlotList {
-	if !strings.Contains(url, "http://wiki.echo12.de/wiki/") {
+	if !strings.Contains(url, "://wiki.echo12.de/wiki/") {
 		return nil
 	}
 
